@@ -1,0 +1,48 @@
+
+ private ArrayList<String> dirs;
+    private File file;
+    private File[] filesInCurrentDir;
+    private ListView dirList;
+
+
+     setContentView(R.layout.activity_edit_of_dir);
+            dirList = (ListView) findViewById(R.id.dirList);
+            String dirPathFromUser = dirFinder.getText().toString();
+            file = new File(dirPathFromUser);
+            filesInCurrentDir = file.listFiles();
+            dirs = new ArrayList<>();
+
+
+
+@Override
+    protected void onResume() {
+        super.onResume();
+
+        for (File aFilesInCurrentDir : filesInCurrentDir) {
+            if (aFilesInCurrentDir.isDirectory()) {
+                if (aFilesInCurrentDir.exists()) {
+                    if (aFilesInCurrentDir.listFiles(new AudioFileFilter()).length > 0) {
+                        dirs.add(aFilesInCurrentDir.getName());
+                    }
+                }
+
+            }
+        }
+        ArrayAdapter<String> dirsWithMusic = new ArrayAdapter<>(this, R.layout.simple_list_of_items_layout
+                , dirs);
+        dirList.setAdapter(dirsWithMusic);
+        dirList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+            }
+        });
+    }
+
+    class AudioFileFilter implements FilenameFilter{
+
+        @Override
+        public boolean accept(File dir, String filename) {
+            return (filename.endsWith(".mp3") || filename.endsWith(".MP3"));
+        }
+    }

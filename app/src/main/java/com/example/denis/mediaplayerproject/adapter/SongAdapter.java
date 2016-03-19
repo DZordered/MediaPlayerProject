@@ -19,7 +19,8 @@ import java.util.List;
 public class SongAdapter extends BaseAdapter implements Filterable{
     private ItemFilter itemFilter = new ItemFilter();
     private ArrayList<Song> list;
-    private ArrayList<String> filtered = null;
+    private ArrayList<Song> filtered;
+    private ArrayList<Song> songList;
     private LayoutInflater li;
 
     public SongAdapter(Context context, ArrayList<Song> list){
@@ -69,28 +70,26 @@ public class SongAdapter extends BaseAdapter implements Filterable{
 
             FilterResults results = new FilterResults();
 
-
             int count = list.size();
-            final ArrayList<String> nlist = new ArrayList<>(count);
 
-            Song filterableSong; ;
+            Song filterableSong;
 
             for (int i = 0; i < count; i++) {
                 filterableSong = list.get(i);
-                if (filterableSong.getTitle().toLowerCase().contains(filterString)) {
-                    nlist.add(filterableSong.getTitle());
+                if(filterableSong.toString().toLowerCase().contains(filterString)){
+                    filtered.add(filterableSong);
                 }
             }
 
-            results.values = nlist;
-            results.count = nlist.size();
+            results.values = filtered;
+            results.count = filtered.size();
 
             return results;
         }
         @SuppressWarnings("unchecked")
         @Override
         protected void publishResults(CharSequence constraint, FilterResults results) {
-            filtered = (ArrayList<String>) results.values;
+            songList = (ArrayList<Song>) results.values;
             notifyDataSetChanged();
         }
     }

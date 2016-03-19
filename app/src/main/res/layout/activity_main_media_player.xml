@@ -58,9 +58,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/filter"
-        android:layout_below="@+id/sortByArtists"
+        android:layout_below="@+id/textView2"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="89dp"
         android:layout_toStartOf="@+id/listOfMusic" />
 
     <Button
@@ -71,6 +70,17 @@
         android:id="@+id/browser"
         android:layout_below="@+id/sortByArtists"
         android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Filter"
+        android:id="@+id/textView2"
+        android:layout_below="@+id/browser"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="37dp"
+        android:layout_alignEnd="@+id/browser" />
 
 
 </RelativeLayout>

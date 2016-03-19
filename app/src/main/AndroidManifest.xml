@@ -60,7 +60,7 @@
         </activity>
 
         <service
-            android:name=".sevices.BackgroundPlayService"
+            android:name=".services.BackgroundPlayService"
             android:enabled="true"
             android:exported="true"
             android:permission="@string/app_name" >

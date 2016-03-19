@@ -14,6 +14,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -142,6 +143,8 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         }
         songAdapter = new SongAdapter(this, songs);
         songList.setAdapter(songAdapter);
+        songList.setTextFilterEnabled(true);
+
         filter.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -150,12 +153,14 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                songAdapter.getFilter().filter(s.toString());
+                songAdapter.getFilter().filter(s);
+                songAdapter.notifyDataSetChanged();
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-
+                songAdapter.getFilter().filter(s);
+                songAdapter.notifyDataSetChanged();
             }
         });
 

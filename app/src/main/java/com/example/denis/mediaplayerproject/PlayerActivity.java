@@ -14,7 +14,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.denis.mediaplayerproject.sevices.BackgroundPlayService;
+import com.example.denis.mediaplayerproject.services.BackgroundPlayService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,8 +29,6 @@ public class PlayerActivity extends AppCompatActivity {
     private Handler durationHandler = new Handler();
     private TextView duration;
     private String path;
-    private BackgroundPlayService bps;
-    //private long resId;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,10 +55,9 @@ public class PlayerActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         mp.start();
-        startTime = mp.getCurrentPosition();
+        startTime = mp.getDuration();
         seekBar.setMax((int) startTime);
         durationHandler.postDelayed(updateSeekBarTime, 100);
-
 
         mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 
@@ -76,7 +73,7 @@ public class PlayerActivity extends AppCompatActivity {
     public void next(){
         String nextSong = " ";
         if(songs.get(currentPosition++) != null){
-            nextSong = songs.get(currentPosition--).getPath();
+            nextSong = songs.get(currentPosition++).getPath();
         }else Toast.makeText(this, "End of list", Toast.LENGTH_SHORT).show();
         mp.reset();
             try {
@@ -125,6 +122,31 @@ public class PlayerActivity extends AppCompatActivity {
             startPlay( Environment.DIRECTORY_MUSIC + songs.get(currentPosition));
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stop();
+        mp.release();
+        startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
+
+
+    }
+
+    private Runnable updateSeekBarTime = new Runnable() {
+        public void run() {
+            startTime = mp.getCurrentPosition();
+            seekBar.setProgress((int) startTime);
+            long timeRemaining = (long) (finalTime - startTime);
+            duration.setText(String.format("%d min, %d sec",
+                    TimeUnit.MILLISECONDS.toMinutes(timeRemaining),
+                    TimeUnit.MILLISECONDS.toSeconds(timeRemaining) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining))
+            ));
+            durationHandler.postDelayed(this, 1000);
+        }
+    };
+
     public void initFields(){
         TextView title = (TextView) findViewById(R.id.song_title);
         title.setText(songs.get(currentPosition).getTitle());
@@ -173,10 +195,30 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 stop();
+                mp.release();
             }
         });
 
         seekBar = (SeekBar) findViewById(R.id.seekBar);
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    mp.seekTo(progress * 1000);
+                    seekBar.setProgress(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
 
         ImageView album_image = (ImageView)findViewById(R.id.album_image);
         if(songs.get(currentPosition).getBitmap() == null)
@@ -184,69 +226,46 @@ public class PlayerActivity extends AppCompatActivity {
         album_image.setImageBitmap(songs.get(currentPosition).getBitmap());
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        pause();
-        startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
-
-
-    }
-
-    private Runnable updateSeekBarTime = new Runnable() {
-        public void run() {
-            startTime = mp.getCurrentPosition();
-            seekBar.setProgress((int) startTime);
-            long timeRemaining = (long) (finalTime - startTime);
-            duration.setText(String.format("%d min, %d sec",
-                    TimeUnit.MILLISECONDS.toMinutes(timeRemaining),
-                    TimeUnit.MILLISECONDS.toSeconds(timeRemaining) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining))
-            ));
-            durationHandler.postDelayed(this, 100);
-        }
-    };
-
     public void initFieldsForNextSong(){
         TextView title = (TextView) findViewById(R.id.song_title);
-        title.setText(songs.get(currentPosition++).getTitle());
+        title.setText(songs.get(++currentPosition).getTitle());
 
         TextView artist = (TextView) findViewById(R.id.artist);
-        artist.setText(songs.get(currentPosition++).getArtist());
+        artist.setText(songs.get(++currentPosition).getArtist());
 
         TextView album = (TextView) findViewById(R.id.album);
-        album.setText(songs.get(currentPosition++).getAlbum());
+        album.setText(songs.get(++currentPosition).getAlbum());
 
         TextView fullDuration = (TextView)findViewById(R.id.fullduration);
-        fullDuration.setText(songs.get(currentPosition++).getDuration());
+        fullDuration.setText(songs.get(++currentPosition).getDuration());
 
         duration = (TextView) findViewById(R.id.duration);
 
         seekBar = (SeekBar) findViewById(R.id.seekBar);
 
         ImageView album_image = (ImageView)findViewById(R.id.album_image);
-        album_image.setImageBitmap(songs.get(currentPosition++).getBitmap());
+        album_image.setImageBitmap(songs.get(++currentPosition).getBitmap());
     }
 
     public void initFieldsForPrevSong(){
         TextView title = (TextView) findViewById(R.id.song_title);
-        title.setText(songs.get(currentPosition--).getTitle());
+        title.setText(songs.get(--currentPosition).getTitle());
 
         TextView artist = (TextView) findViewById(R.id.artist);
-        artist.setText(songs.get(currentPosition--).getArtist());
+        artist.setText(songs.get(--currentPosition).getArtist());
 
         TextView album = (TextView) findViewById(R.id.album);
-        album.setText(songs.get(currentPosition--).getAlbum());
+        album.setText(songs.get(--currentPosition).getAlbum());
 
         TextView fullDuration = (TextView)findViewById(R.id.fullduration);
-        fullDuration.setText(songs.get(currentPosition--).getDuration());
+        fullDuration.setText(songs.get(--currentPosition).getDuration());
 
         duration = (TextView) findViewById(R.id.duration);
 
         seekBar = (SeekBar) findViewById(R.id.seekBar);
 
         ImageView album_image = (ImageView)findViewById(R.id.album_image);
-        album_image.setImageBitmap(songs.get(currentPosition--).getBitmap());
+        album_image.setImageBitmap(songs.get(--currentPosition).getBitmap());
     }
 }
 

@@ -77,7 +77,7 @@ public class ListOfDirActivity extends AppCompatActivity {
                     int durationColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
                     int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
                     int path = cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
-                    long album_artId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART));
+                    long album_artId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
                     do {
                         final Uri ALBUM_ART_URI = Uri.parse("content://media/external/audio/albumart");
                         Uri albumArtUri = ContentUris.withAppendedId(ALBUM_ART_URI, album_artId);

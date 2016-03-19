@@ -1,4 +1,4 @@
-package com.example.denis.mediaplayerproject.sevices;
+package com.example.denis.mediaplayerproject.services;
 
 import android.app.Service;
 import android.content.Intent;

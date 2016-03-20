@@ -62,7 +62,7 @@ public class PlayerActivity extends AppCompatActivity {
         mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 
             public void onCompletion(MediaPlayer arg) {
-                nextSong();
+                next();
             }
         });
     }
@@ -113,38 +113,34 @@ public class PlayerActivity extends AppCompatActivity {
     }
     public void stop(){
         mp.stop();
+        mp.release();
     }
 
-    public void nextSong(){
-        if (++currentPosition >= songs.size()) {
-            currentPosition = 0;
-        } else {
-            startPlay( Environment.DIRECTORY_MUSIC + songs.get(currentPosition));
-        }
-    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stop();
-        mp.release();
-        startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
-
+        if(mp.isPlaying()){
+            pause();
+            startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
+        } else{
+            mp.stop();
+        }
 
     }
 
     private Runnable updateSeekBarTime = new Runnable() {
         public void run() {
-            startTime = mp.getCurrentPosition();
-            seekBar.setProgress((int) startTime);
-            long timeRemaining = (long) (finalTime - startTime);
-            duration.setText(String.format("%d min, %d sec",
-                    TimeUnit.MILLISECONDS.toMinutes(timeRemaining),
-                    TimeUnit.MILLISECONDS.toSeconds(timeRemaining) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining))
-            ));
-            durationHandler.postDelayed(this, 1000);
-        }
+                startTime = mp.getCurrentPosition();
+                seekBar.setProgress((int) startTime);
+                long timeRemaining = (long) (finalTime - startTime);
+                duration.setText(String.format("%d min, %d sec",
+                        TimeUnit.MILLISECONDS.toMinutes(timeRemaining),
+                        TimeUnit.MILLISECONDS.toSeconds(timeRemaining) -
+                                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeRemaining))
+                ));
+                durationHandler.postDelayed(this, 1000);
+            }
     };
 
     public void initFields(){

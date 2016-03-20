@@ -45,6 +45,8 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         songList = (ListView) findViewById(R.id.listOfMusic);
         EditText filter = (EditText) findViewById(R.id.filter);
         final Button sortByArtists = (Button)findViewById(R.id.sortByArtists);
+
+        // create buttons for sort
         sortByArtists.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -76,6 +78,7 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
             }
         });
 
+        // button for browser
         Button browser = (Button) findViewById(R.id.browser);
         browser.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,16 +87,20 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
             }
         });
 
+        // create new listView from user path
         if(getIntent().hasExtra("songsFromUserDir")){
             ArrayList<Song> userMusicFromDir = getIntent().getExtras().getParcelableArrayList("songsFromUserDir");
             songList.setAdapter(new SongAdapter(this, userMusicFromDir));
         }
 
+        //get all music content
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         cursor = getContentResolver().query(uri, null, null, null, null);
 
          songs = new ArrayList<>();
+
+        //Find all songs and add them into array "songs"
         if (cursor == null) {
             Toast.makeText(this, "Query failed", Toast.LENGTH_SHORT).show();
         } else if (!cursor.moveToFirst()) {
@@ -106,13 +113,12 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
             path = cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
             long albumId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
 
-
             do {
                 final Uri ALBUM_ART_URI = Uri.parse("content://media/external/audio/albumart");
                 Uri albumArtUri = ContentUris.withAppendedId(ALBUM_ART_URI, albumId);
                bitmap = null;
                 try {
-                    //MediaStore.Images.Media.getBitmap(getContentResolver(), albumArtUri);
+
                     bitmap = BitmapFactory.decodeFile(albumArtUri.getPath());
                     if(bitmap == null) {
                         try {
@@ -141,10 +147,13 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
                         cursor.getString(path)));
             } while (cursor.moveToNext());
         }
+
+        //create adapter and set it in listView
         songAdapter = new SongAdapter(this, songs);
         songList.setAdapter(songAdapter);
         songList.setTextFilterEnabled(true);
 
+        //enable our filter for a listView
         filter.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -177,6 +186,8 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
             }
         });
     }
+
+    // methods for sort
     public void sortByTitles(){
         Collections.sort(songs, new Comparator<Song>() {
             @Override
@@ -214,6 +225,8 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         songList.setAdapter(new SongAdapter(this, songs));
     }
 
+
+    //method to get music from user dir
     public void getAllDirWithMusic(){
         Intent intent = new Intent(this, EditDirActivity.class);
         startActivity(intent);

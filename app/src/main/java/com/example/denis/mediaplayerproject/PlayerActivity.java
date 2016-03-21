@@ -1,11 +1,16 @@
 package com.example.denis.mediaplayerproject;
 
+import android.app.ActivityManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageButton;
@@ -15,20 +20,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.denis.mediaplayerproject.services.BackgroundPlayService;
+import com.example.denis.mediaplayerproject.services.PlayMusicService;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerActivity extends AppCompatActivity {
-    private MediaPlayer mp;
     private int currentPosition;
     private ArrayList<Song> songs;
     private SeekBar seekBar;
-    double finalTime, startTime =  0;
+    private double finalTime, startTime =  0;
     private Handler durationHandler = new Handler();
     private TextView duration;
     private String path;
+    private PlayMusicService pms;
+    private ServiceConnection serviceConnection;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,101 +44,51 @@ public class PlayerActivity extends AppCompatActivity {
         songs = getIntent().getParcelableArrayListExtra("songs");
         path = getIntent().getExtras().getString("path");
         initFields();
+
+        Intent playServiceIntent = new Intent(this, PlayMusicService.class);
+        startService(playServiceIntent.putExtra("songs", songs).putExtra("currentPosition", currentPosition).putExtra("path", path));
+         serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                pms = ((PlayMusicService.PlayMusicServiceBinder)service).getService();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                pms = null;
+            }
+        };
+
+        onBind();
+
+
+
         this.stopService(new Intent(this, BackgroundPlayService.class));
-        startPlay(path);
-
     }
-
-    private void startPlay(String path){
-        mp = MediaPlayer.create(this, Uri.parse(path));
-        if(mp == null)
-            Toast.makeText(this, "Create failed", Toast.LENGTH_SHORT).show();
-
-       mp.reset();
-        try {
-            mp.setDataSource(path);
-            mp.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        mp.start();
-        startTime = mp.getDuration();
-        seekBar.setMax((int) startTime);
-        durationHandler.postDelayed(updateSeekBarTime, 100);
-
-        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-
-            public void onCompletion(MediaPlayer arg) {
-                next();
-            }
-        });
-    }
-
-        public void pause(){
-        mp.pause();
-    }
-    public void next(){
-        String nextSong = " ";
-        if(songs.get(currentPosition++) != null){
-            nextSong = songs.get(currentPosition++).getPath();
-        }else Toast.makeText(this, "End of list", Toast.LENGTH_SHORT).show();
-        mp.reset();
-            try {
-                if(nextSong != null)
-                mp.setDataSource(nextSong);
-                mp.prepare();
-                mp.start();
-
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        initFieldsForNextSong();
-    }
-    public void prev(){
-        String prevSong = " ";
-        if(songs.get(currentPosition--) != null){
-            prevSong = songs.get(currentPosition--).getPath();
-        }else Toast.makeText(this, "End of list", Toast.LENGTH_SHORT).show();
-
-        mp.reset();
-        try {
-            if(prevSong != null) mp.setDataSource(prevSong);
-
-            mp.prepare();
-            mp.start();
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        initFieldsForPrevSong();
-    }
-
-    public void play(){
-        mp.start();
-    }
-    public void stop(){
-        mp.stop();
-        mp.release();
-    }
-
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mp.isPlaying()){
+        /*if(mp.isPlaying()){
             pause();
             startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
         } else{
             mp.stop();
         }
+          */
+        if(pms.isPlaying()){
+            pms.pause();
+            startService(new Intent(this, BackgroundPlayService.class).putExtra("path", path));
+        }
+        stopService(new Intent(this, PlayMusicService.class));
 
     }
 
+
+
     private Runnable updateSeekBarTime = new Runnable() {
         public void run() {
-                startTime = mp.getCurrentPosition();
+                startTime = pms.getMediaPlayer().getCurrentPosition();
                 seekBar.setProgress((int) startTime);
                 long timeRemaining = (long) (finalTime - startTime);
                 duration.setText(String.format("%d min, %d sec",
@@ -162,36 +119,35 @@ public class PlayerActivity extends AppCompatActivity {
         prev.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                prev();
+                pms.prev();
             }
         });
         ImageButton pause = (ImageButton) findViewById(R.id.pause);
         pause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pause();
+                pms.pause();
             }
         });
         ImageButton play = (ImageButton) findViewById(R.id.play);
         play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                play();
+                pms.play();
             }
         });
         final ImageButton next = (ImageButton) findViewById(R.id.next);
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                next();
+                pms.next();
             }
         });
         ImageButton stop = (ImageButton) findViewById(R.id.stop);
         stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stop();
-                mp.release();
+                pms.stop();
             }
         });
 
@@ -200,7 +156,7 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    mp.seekTo(progress * 1000);
+                    pms.getMediaPlayer().seekTo(progress * 1000);
                     seekBar.setProgress(progress);
                 }
             }
@@ -263,6 +219,12 @@ public class PlayerActivity extends AppCompatActivity {
         ImageView album_image = (ImageView)findViewById(R.id.album_image);
         album_image.setImageBitmap(songs.get(--currentPosition).getBitmap());
     }
+
+    public void onBind(){
+       this.bindService(new Intent(this, PlayMusicService.class),serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+
 }
 
 

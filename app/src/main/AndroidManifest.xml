@@ -65,6 +65,11 @@
             android:exported="true"
             android:permission="@string/app_name" >
         </service>
+        <service
+            android:name=".services.PlayMusicService"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
     </application>
 
 </manifest>

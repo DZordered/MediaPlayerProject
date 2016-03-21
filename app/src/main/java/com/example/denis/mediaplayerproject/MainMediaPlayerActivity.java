@@ -31,7 +31,7 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
     private ListView songList;
     private ArrayList<Song> songs;
     private Cursor cursor;
-    int currentPosition = 0;
+    private int currentPosition = 0;
     private int path;
     private String correctDuration;
     private SongAdapter songAdapter = null;
@@ -87,9 +87,10 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
             }
         });
 
-        // create new listView from user path
+        // create new listView from user path if intent has extra
         if(getIntent().hasExtra("songsFromUserDir")){
-            ArrayList<Song> userMusicFromDir = getIntent().getExtras().getParcelableArrayList("songsFromUserDir");
+            ArrayList<Song> userMusicFromDir = getIntent().getExtras()
+                    .getParcelableArrayList("songsFromUserDir");
             songList.setAdapter(new SongAdapter(this, userMusicFromDir));
         }
 
@@ -226,7 +227,7 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
     }
 
 
-    //method to get music from user dir
+    //go to listOfDirActivity
     public void getAllDirWithMusic(){
         Intent intent = new Intent(this, EditDirActivity.class);
         startActivity(intent);

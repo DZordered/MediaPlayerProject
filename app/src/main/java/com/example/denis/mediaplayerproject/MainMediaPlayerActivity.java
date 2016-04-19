@@ -21,133 +21,83 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.denis.mediaplayerproject.adapter.SongAdapter;
+import com.example.denis.mediaplayerproject.loader.MediaLoader;
+import com.example.denis.mediaplayerproject.utils.MediaUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
-public class MainMediaPlayerActivity extends AppCompatActivity {
+/**
+ * Main media activity
+ * <p>
+ * There user can choose songs from list, sort them, and filter
+ * or choose special directory
+ */
+public class MainMediaPlayerActivity extends AppCompatActivity implements MediaUtil {
+    /**
+     * List of songs(view)
+     */
     private ListView songList;
+    /**
+     * List of songs (list)
+     */
     private ArrayList<Song> songs;
+    /**
+     * Cursor with all columns
+     */
     private Cursor cursor;
+    /**
+     * Song current position
+     */
     private int currentPosition = 0;
+    /**
+     * Song current path
+     */
     private int path;
+    /**
+     * Duration in seconds and minutes
+     */
     private String correctDuration;
+    /**
+     * Custom adapter
+     */
     private SongAdapter songAdapter = null;
+    /**
+     * Options for bitmap
+     */
     private BitmapFactory.Options options;
+    /**
+     * Resource for album art
+     */
     private Bitmap bitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_media_player);
+
         songList = (ListView) findViewById(R.id.listOfMusic);
         EditText filter = (EditText) findViewById(R.id.filter);
-        final Button sortByArtists = (Button)findViewById(R.id.sortByArtists);
 
-        // create buttons for sort
-        sortByArtists.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sortByArtists();
-            }
-        });
-
-        final Button sortByTitles = (Button)findViewById(R.id.sortByTitle);
-        sortByTitles.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sortByTitles();
-            }
-        });
-
-        final Button sortByAlbums = (Button)findViewById(R.id.sortByAlbums);
-        sortByAlbums.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sortByAlbums();
-            }
-        });
-
-        final Button sortByDuration = (Button)findViewById(R.id.sortByDuration);
-        sortByDuration.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sortByDuration();
-            }
-        });
-
-        // button for browser
-        Button browser = (Button) findViewById(R.id.browser);
-        browser.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getAllDirWithMusic();
-            }
-        });
+        // Set all buttons on activity
+        setButtons();
 
         // create new listView from user path if intent has extra
-        if(getIntent().hasExtra("songsFromUserDir")){
+        if (getIntent().hasExtra("songsFromUserDir")) {
             ArrayList<Song> userMusicFromDir = getIntent().getExtras()
                     .getParcelableArrayList("songsFromUserDir");
             songList.setAdapter(new SongAdapter(this, userMusicFromDir));
         }
 
-        //get all music content
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        //get cursor with all columns
+        cursor = new MediaLoader(this, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI)
+                                .loadInBackground();
 
-        cursor = getContentResolver().query(uri, null, null, null, null);
+        //get all songs and add in list
+        songs = getListOfSongs(cursor);
 
-         songs = new ArrayList<>();
-
-        //Find all songs and add them into array "songs"
-        if (cursor == null) {
-            Toast.makeText(this, "Query failed", Toast.LENGTH_SHORT).show();
-        } else if (!cursor.moveToFirst()) {
-            Toast.makeText(this, "No media on device", Toast.LENGTH_SHORT).show();
-        } else {
-            int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-            int durationColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
-            int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
-            path = cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
-            long albumId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
-
-            do {
-                final Uri ALBUM_ART_URI = Uri.parse("content://media/external/audio/albumart");
-                Uri albumArtUri = ContentUris.withAppendedId(ALBUM_ART_URI, albumId);
-               bitmap = null;
-                try {
-
-                    bitmap = BitmapFactory.decodeFile(albumArtUri.getPath());
-                    if(bitmap == null) {
-                        try {
-                            options = new BitmapFactory.Options();
-                            options.inSampleSize = 2;
-                            bitmap = BitmapFactory.decodeFile(albumArtUri.getPath(),options);
-                        }catch (Exception e){}//NOP
-                    }
-                } catch (OutOfMemoryError out) {
-                    Toast.makeText(this, "Wrong bitmap", Toast.LENGTH_SHORT).show();
-                }
-
-                if (cursor != null && cursor.getString(durationColumn) != null){
-                    correctDuration = String.format("%d min, %d sec",
-                            TimeUnit.MILLISECONDS.toMinutes(Integer.parseInt(cursor.getString(durationColumn))),
-                            TimeUnit.MILLISECONDS.toSeconds(Integer.parseInt(cursor.getString(durationColumn))) -
-                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(Integer.parseInt(cursor.getString(durationColumn))))
-                    );
-                }
-                songs.add(new Song(
-                        cursor.getString(titleColumn),
-                        cursor.getString(artistColumn),
-                        correctDuration,
-                        cursor.getString(albumColumn),
-                        bitmap,
-                        cursor.getString(path)));
-            } while (cursor.moveToNext());
-        }
 
         //create adapter and set it in listView
         songAdapter = new SongAdapter(this, songs);
@@ -188,8 +138,10 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         });
     }
 
-    // methods for sort
-    public void sortByTitles(){
+    /**
+     * Sort list by titles
+     */
+    public void sortByTitles() {
         Collections.sort(songs, new Comparator<Song>() {
             @Override
             public int compare(Song lhs, Song rhs) {
@@ -198,7 +150,11 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         });
         songList.setAdapter(new SongAdapter(this, songs));
     }
-    public void sortByArtists(){
+
+    /**
+     * Sort list by artists
+     */
+    public void sortByArtists() {
         Collections.sort(songs, new Comparator<Song>() {
             @Override
             public int compare(Song lhs, Song rhs) {
@@ -207,7 +163,11 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         });
         songList.setAdapter(new SongAdapter(this, songs));
     }
-    public void sortByAlbums(){
+
+    /**
+     * Sort list by albums
+     */
+    public void sortByAlbums() {
         Collections.sort(songs, new Comparator<Song>() {
             @Override
             public int compare(Song lhs, Song rhs) {
@@ -216,7 +176,11 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
         });
         songList.setAdapter(new SongAdapter(this, songs));
     }
-    public void sortByDuration(){
+
+    /**
+     * Sort list by duration
+     */
+    public void sortByDuration() {
         Collections.sort(songs, new Comparator<Song>() {
             @Override
             public int compare(Song lhs, Song rhs) {
@@ -227,11 +191,118 @@ public class MainMediaPlayerActivity extends AppCompatActivity {
     }
 
 
-    //go to listOfDirActivity
-    public void getAllDirWithMusic(){
+    /**
+     * Method call activity where user can edit special directory
+     * <p>
+     */
+    public void getAllDirWithMusic() {
         Intent intent = new Intent(this, EditDirActivity.class);
         startActivity(intent);
     }
 
+    /**
+     * Get user songs from some storage
+     * <p>
+     * @param cursor of songs columns
+     * @return list of songs
+     */
+    @Override
+    public ArrayList<Song> getListOfSongs(Cursor cursor) {
+        if (cursor == null) {
+            Toast.makeText(this, "Query failed", Toast.LENGTH_SHORT).show();
+        } else if (!cursor.moveToFirst()) {
+            Toast.makeText(this, "No media on device", Toast.LENGTH_SHORT).show();
+        } else {
+            int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+            int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+            int durationColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
+            int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+            path = cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
+            long albumId = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
+
+            do {
+                final Uri ALBUM_ART_URI = Uri.parse("content://media/external/audio/albumart");
+                Uri albumArtUri = ContentUris.withAppendedId(ALBUM_ART_URI, albumId);
+                bitmap = null;
+                try {
+
+                    bitmap = BitmapFactory.decodeFile(albumArtUri.getPath());
+                    if (bitmap == null) {
+                        try {
+                            options = new BitmapFactory.Options();
+                            options.inSampleSize = 2;
+                            bitmap = BitmapFactory.decodeFile(albumArtUri.getPath(), options);
+                        } catch (Exception e) {
+                        }//NOP
+                    }
+                } catch (OutOfMemoryError out) {
+                    Toast.makeText(this, "Wrong bitmap", Toast.LENGTH_SHORT).show();
+                }
+
+                if (cursor.getString(durationColumn) != null) {
+                    correctDuration = String.format("%d min, %d sec",
+                            TimeUnit.MILLISECONDS.toMinutes(Integer.parseInt(cursor.getString(durationColumn))),
+                            TimeUnit.MILLISECONDS.toSeconds(Integer.parseInt(cursor.getString(durationColumn))) -
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(Integer.parseInt(cursor.getString(durationColumn))))
+                    );
+                }
+                songs.add(new Song(
+                        cursor.getString(titleColumn),
+                        cursor.getString(artistColumn),
+                        correctDuration,
+                        cursor.getString(albumColumn),
+                        bitmap,
+                        cursor.getString(path)));
+            } while (cursor.moveToNext());
+
+        }
+        return songs;
+    }
+
+
+    public void setButtons(){
+        final Button sortByArtists = (Button) findViewById(R.id.sortByArtists);
+
+        // create buttons for sort
+        sortByArtists.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sortByArtists();
+            }
+        });
+
+        final Button sortByTitles = (Button) findViewById(R.id.sortByTitle);
+        sortByTitles.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sortByTitles();
+            }
+        });
+
+        final Button sortByAlbums = (Button) findViewById(R.id.sortByAlbums);
+        sortByAlbums.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sortByAlbums();
+            }
+        });
+
+        final Button sortByDuration = (Button) findViewById(R.id.sortByDuration);
+        sortByDuration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sortByDuration();
+            }
+        });
+
+        // button for browser
+        Button browser = (Button) findViewById(R.id.browser);
+        browser.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getAllDirWithMusic();
+            }
+        });
+    }
 }
 

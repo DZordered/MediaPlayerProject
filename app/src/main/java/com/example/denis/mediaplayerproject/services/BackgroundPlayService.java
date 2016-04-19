@@ -7,17 +7,31 @@ import android.os.IBinder;
 
 import java.io.IOException;
 
+
+/**
+ * Service for playing music on background
+ * <p>
+ */
 public class BackgroundPlayService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener
         ,MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnInfoListener,
         MediaPlayer.OnBufferingUpdateListener {
-
+    /**
+     * Media player instance
+     */
     private MediaPlayer mediaPlayer = new MediaPlayer();
+    /**
+     * Our song path, what we get from intent
+     */
     private String path;
-    public BackgroundPlayService() {
-    }
 
 
+    public BackgroundPlayService() {}
+
+    /**
+     * Set all our listeners
+     * <p>
+     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -30,6 +44,15 @@ public class BackgroundPlayService extends Service implements MediaPlayer.OnComp
         mediaPlayer.reset();
     }
 
+    /**
+     * Service method what we using for getting some path
+     * of media, and play it instantly (if our MP is not active)
+     * <p>
+     * @param intent intent what we get (with some extras)
+     * @param flags NOP
+     * @param startId NOP
+     * @return start id
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         path = intent.getExtras().getString("path");
@@ -47,6 +70,10 @@ public class BackgroundPlayService extends Service implements MediaPlayer.OnComp
         return START_STICKY;
     }
 
+    /**
+     * Just stop our MP when service be destroyed
+     * <p>
+     */
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -56,13 +83,25 @@ public class BackgroundPlayService extends Service implements MediaPlayer.OnComp
         }
     }
 
+    /**
+     * Play action
+     */
     public void play(){
         if(!mediaPlayer.isPlaying()) mediaPlayer.start();
     }
+
+    /**
+     * Stop action
+     */
     public  void stop(){
         if(mediaPlayer.isPlaying()) mediaPlayer.stop();
     }
 
+    /**
+     *
+     * @param intent NOP
+     * @return  nothing, cause we didn't use bind on that service
+     */
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
@@ -74,6 +113,11 @@ public class BackgroundPlayService extends Service implements MediaPlayer.OnComp
 
     }
 
+    /**
+     * This method stop our MP on completion
+     * <p>
+     * @param mp our media player
+     */
     @Override
     public void onCompletion(MediaPlayer mp) {
         stop();

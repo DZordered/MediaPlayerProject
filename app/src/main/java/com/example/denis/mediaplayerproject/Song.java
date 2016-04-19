@@ -5,12 +5,33 @@ import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+/**
+ * Custom song instance
+ */
 public class Song implements Parcelable {
+    /**
+     * Title our song
+     */
     private String title;
+    /**
+     * Name of artist
+     */
     private String artist ;
+    /**
+     * Song duration
+     */
     private String  duration ;
+    /**
+     * Album name
+     */
     private String album ;
+    /**
+     * Bitmap for album art
+     */
     private Bitmap bitmap;
+    /**
+     * Source path
+     */
     private String path;
 
 

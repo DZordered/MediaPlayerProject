@@ -16,10 +16,25 @@ import com.example.denis.mediaplayerproject.Song;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Custom adapter for setting songs in list view
+ */
 public class SongAdapter extends BaseAdapter implements Filterable{
+    /**
+     * Instance for filtering items
+     */
     private ItemFilter itemFilter = new ItemFilter();
+    /**
+     * List of songs what need filtered
+     */
     private ArrayList<Song> list;
+    /**
+     * List of songs what be filtered
+     */
     private ArrayList<Song> filtered;
+    /**
+     * List for publish results
+     */
     private ArrayList<Song> songList;
     private LayoutInflater li;
 
@@ -43,6 +58,15 @@ public class SongAdapter extends BaseAdapter implements Filterable{
         return position;
     }
 
+
+    /**
+     * This method used for getting new view for each song
+     * <p>
+     * @param position our song position
+     * @param convertView view, what we will convert
+     * @param parent parent viewGroup
+     * @return new view
+     */
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
@@ -64,6 +88,12 @@ public class SongAdapter extends BaseAdapter implements Filterable{
 
     class ItemFilter extends Filter{
 
+        /**
+         * Method realise filtering (search tool)
+         * <p>
+         * @param constraint chars, what user input
+         * @return our filter results
+         */
         @Override
         protected FilterResults performFiltering(CharSequence constraint) {
             String filterString = constraint.toString().toLowerCase();
@@ -86,6 +116,8 @@ public class SongAdapter extends BaseAdapter implements Filterable{
 
             return results;
         }
+
+
         @SuppressWarnings("unchecked")
         @Override
         protected void publishResults(CharSequence constraint, FilterResults results) {

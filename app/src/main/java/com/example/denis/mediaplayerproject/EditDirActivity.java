@@ -15,19 +15,34 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 
+/**
+ * Class what provide editing special directory
+ * for find music in
+ * <p>
+ */
 public class EditDirActivity extends AppCompatActivity {
+    /**
+     * Text what user edit
+     */
     private EditText dirFinder;
+    /**
+     * Converted dirFinder in string
+     */
     private String dirPathFromUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_of_dir);
+
+
         dirFinder = (EditText) findViewById(R.id.editDirFinder);
         Button getDirButton = (Button) findViewById(R.id.getDirButton);
         getDirButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                // convert our text what user input
                 dirPathFromUser = dirFinder.getText().toString();
                 Intent intent = new Intent(EditDirActivity.this, ListOfDirActivity.class);
                 intent.putExtra("dirPathFromUser", dirPathFromUser);
